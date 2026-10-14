@@ -13,6 +13,8 @@
 - IP 记录的新增、编辑、删除
 - 按关键词 / 状态筛选与分页
 - 状态统计：空闲 / 使用中 / 预留 / 停用
+- 网段占用示意图
+- CSV / Excel 导入导出（同 IP 自动更新）
 - 记录字段：IP、网段、状态、主机名、MAC、使用人、部门、位置、备注
 
 ## 目录结构
@@ -103,6 +105,9 @@ npm run dev
 |------|------|------|
 | GET | `/api/ip-records` | 分页查询 |
 | GET | `/api/ip-records/stats` | 状态统计 |
+| GET | `/api/ip-records/export?format=csv\|xlsx` | 导出 |
+| GET | `/api/ip-records/import/template?format=csv\|xlsx` | 下载导入模板 |
+| POST | `/api/ip-records/import` | 上传 CSV/Excel 导入 |
 | POST | `/api/ip-records` | 新增 |
 | PUT | `/api/ip-records/{id}` | 更新 |
 | DELETE | `/api/ip-records/{id}` | 删除 |

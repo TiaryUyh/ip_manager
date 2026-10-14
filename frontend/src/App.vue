@@ -1,20 +1,25 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Download, Plus, Upload } from '@element-plus/icons-vue'
 import {
   createIpRecord,
   deleteIpRecord,
+  downloadImportTemplate,
+  exportIpRecords,
   fetchCidrs,
   fetchIpRecords,
   fetchStats,
   fetchSubnetMap,
+  importIpRecords,
   updateIpRecord,
 } from './api/ip'
 
 const loading = ref(false)
 const chartLoading = ref(false)
 const saving = ref(false)
+const importing = ref(false)
+const fileInputRef = ref(null)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const records = ref([])
@@ -309,6 +314,66 @@ function handleHostDblClick(host) {
   })
 }
 
+async function handleExport(format) {
+  try {
+    await exportIpRecords({
+      format,
+      keyword: filters.keyword || undefined,
+      status: filters.status || undefined,
+    })
+    ElMessage.success(format === 'csv' ? 'CSV 导出成功' : 'Excel 导出成功')
+  } catch (error) {
+    ElMessage.error(error.message)
+  }
+}
+
+async function handleDownloadTemplate(format) {
+  try {
+    await downloadImportTemplate(format)
+  } catch (error) {
+    ElMessage.error(error.message)
+  }
+}
+
+function triggerImport() {
+  fileInputRef.value?.click()
+}
+
+async function handleImportChange(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+
+  const name = file.name.toLowerCase()
+  if (!name.endsWith('.csv') && !name.endsWith('.xlsx') && !name.endsWith('.xlsm')) {
+    ElMessage.warning('请选择 CSV 或 Excel（.xlsx）文件')
+    return
+  }
+
+  importing.value = true
+  try {
+    const result = await importIpRecords(file)
+    const summary = `导入完成：新增 ${result.created}，更新 ${result.updated}，失败 ${result.failed}`
+    if (result.failed > 0) {
+      const detail = (result.errors || [])
+        .slice(0, 5)
+        .map((item) => `第 ${item.row} 行 ${item.ip || ''}：${item.error}`)
+        .join('\n')
+      await ElMessageBox.alert(detail || '部分行导入失败', summary, {
+        confirmButtonText: '知道了',
+        type: 'warning',
+      })
+    } else {
+      ElMessage.success(summary)
+    }
+    await refresh()
+  } catch (error) {
+    ElMessage.error(error.message)
+  } finally {
+    importing.value = false
+  }
+}
+
 watch(selectedCidr, () => {
   loadSubnetMap()
 })
@@ -324,9 +389,34 @@ onMounted(refresh)
         <h1>IP 地址使用信息平台</h1>
         <p class="subtitle">统一登记、检索与维护内网 IP 分配情况</p>
       </div>
-      <el-button type="primary" size="large" :icon="Plus" @click="openCreate()">
-        新增记录
-      </el-button>
+      <div class="hero-actions">
+        <el-dropdown split-button type="success" :icon="Download" @click="handleExport('xlsx')">
+          导出 Excel
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="handleExport('xlsx')">导出 Excel</el-dropdown-item>
+              <el-dropdown-item @click="handleExport('csv')">导出 CSV</el-dropdown-item>
+              <el-dropdown-item divided @click="handleDownloadTemplate('xlsx')">
+                下载 Excel 模板
+              </el-dropdown-item>
+              <el-dropdown-item @click="handleDownloadTemplate('csv')">
+                下载 CSV 模板
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <el-button :icon="Upload" :loading="importing" @click="triggerImport">导入</el-button>
+        <el-button type="primary" size="large" :icon="Plus" @click="openCreate()">
+          新增记录
+        </el-button>
+        <input
+          ref="fileInputRef"
+          class="hidden-file"
+          type="file"
+          accept=".csv,.xlsx,.xlsm"
+          @change="handleImportChange"
+        />
+      </div>
     </header>
 
     <section class="stats">
@@ -605,6 +695,18 @@ onMounted(refresh)
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 24px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.hidden-file {
+  display: none;
 }
 
 .eyebrow {

@@ -1,12 +1,23 @@
 import ipaddress
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..io_utils import (
+    build_csv_bytes,
+    build_template_csv_bytes,
+    build_template_xlsx_bytes,
+    build_xlsx_bytes,
+    import_rows,
+    parse_import_file,
+)
 from ..models import IpRecord
 from ..schemas import (
+    ImportResultOut,
     IpRecordCreate,
     IpRecordOut,
     IpRecordUpdate,
@@ -85,6 +96,96 @@ def list_cidrs(db: Session = Depends(get_db)):
         .all()
     )
     return [row[0] for row in rows]
+
+
+@router.get("/export")
+def export_ip_records(
+    format: str = Query("xlsx", pattern="^(csv|xlsx)$"),
+    keyword: str | None = Query(None),
+    status: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(IpRecord)
+    if keyword:
+        like = f"%{keyword.strip()}%"
+        query = query.filter(
+            or_(
+                IpRecord.ip_address.ilike(like),
+                IpRecord.hostname.ilike(like),
+                IpRecord.assignee.ilike(like),
+                IpRecord.department.ilike(like),
+                IpRecord.location.ilike(like),
+                IpRecord.cidr.ilike(like),
+            )
+        )
+    if status:
+        query = query.filter(IpRecord.status == status)
+
+    records = query.order_by(IpRecord.ip_address.asc()).all()
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if format == "csv":
+        content = build_csv_bytes(records)
+        filename = f"ip_records_{stamp}.csv"
+        media_type = "text/csv; charset=utf-8"
+    else:
+        content = build_xlsx_bytes(records)
+        filename = f"ip_records_{stamp}.xlsx"
+        media_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/import/template")
+def download_import_template(
+    format: str = Query("xlsx", pattern="^(csv|xlsx)$"),
+):
+    if format == "csv":
+        content = build_template_csv_bytes()
+        filename = "ip_import_template.csv"
+        media_type = "text/csv; charset=utf-8"
+    else:
+        content = build_template_xlsx_bytes()
+        filename = "ip_import_template.xlsx"
+        media_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/import", response_model=ImportResultOut)
+async def import_ip_records(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="请上传文件")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="文件内容为空")
+
+    try:
+        rows = parse_import_file(file.filename, content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="文件中没有可导入的数据行")
+
+    result = import_rows(db, rows)
+    return ImportResultOut(**result)
 
 
 @router.get("/subnet-map", response_model=SubnetMapOut)

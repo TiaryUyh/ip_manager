@@ -97,3 +97,17 @@ class SubnetMapOut(BaseModel):
     reserved: int
     disabled: int
     hosts: list[SubnetHostOut]
+
+
+class ImportErrorItem(BaseModel):
+    row: int
+    ip: str | None = None
+    error: str
+
+
+class ImportResultOut(BaseModel):
+    total: int
+    created: int
+    updated: int
+    failed: int
+    errors: list[ImportErrorItem]
