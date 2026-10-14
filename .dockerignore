@@ -1,0 +1,16 @@
+**/__pycache__
+**/*.pyc
+**/.venv
+**/node_modules
+**/dist
+**/.git
+**/.idea
+**/.vscode
+**/*.db
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+.env
+.env.*
+README.md
+agent-transcripts

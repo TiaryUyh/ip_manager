@@ -1,0 +1,13 @@
+services:
+  ip-manager:
+    build: .
+    image: ip-manager:latest
+    container_name: ip-manager
+    ports:
+      - "8000:8000"
+    volumes:
+      - ip_manager_data:/data
+    restart: unless-stopped
+
+volumes:
+  ip_manager_data:
