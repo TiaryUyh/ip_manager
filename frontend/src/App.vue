@@ -384,11 +384,7 @@ onMounted(refresh)
 <template>
   <div class="page">
     <header class="hero">
-      <div>
-        <p class="eyebrow">IP Address Manager</p>
-        <h1>IP 地址使用信息平台</h1>
-        <p class="subtitle">统一登记、检索与维护内网 IP 分配情况</p>
-      </div>
+      <h1 class="brand-title">IP 地址使用信息平台</h1>
       <div class="hero-actions">
         <el-dropdown split-button type="success" :icon="Download" @click="handleExport('xlsx')">
           导出 Excel
@@ -691,10 +687,18 @@ onMounted(refresh)
 
 .hero {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.brand-title {
+  margin: 0;
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .hero-actions {
@@ -707,26 +711,6 @@ onMounted(refresh)
 
 .hidden-file {
   display: none;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 40px);
-  line-height: 1.2;
-}
-
-.subtitle {
-  margin: 10px 0 0;
-  color: var(--muted);
 }
 
 .stats {
