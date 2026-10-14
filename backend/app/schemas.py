@@ -6,6 +6,28 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 IpStatus = Literal["available", "in_use", "reserved", "disabled"]
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=50)
+    password: str = Field(..., min_length=1, max_length=100)
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    display_name: str | None = None
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    display_name: str | None = None
+    is_active: bool
+    created_at: datetime
+
+
 class IpRecordBase(BaseModel):
     ip_address: str = Field(..., min_length=7, max_length=45, description="IP 地址")
     cidr: str | None = Field(None, max_length=50, description="网段，如 192.168.1.0/24")

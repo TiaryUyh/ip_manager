@@ -1,18 +1,4 @@
-import axios from 'axios'
-
-const http = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-})
-
-http.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const message =
-      error.response?.data?.detail || error.message || '请求失败'
-    return Promise.reject(new Error(typeof message === 'string' ? message : JSON.stringify(message)))
-  },
-)
+import http from './http'
 
 function downloadBlob(blob, filename) {
   const url = window.URL.createObjectURL(blob)
@@ -68,10 +54,7 @@ export async function exportIpRecords(params) {
     params,
     responseType: 'blob',
   })
-  const fallback =
-    params.format === 'csv'
-      ? 'ip_records.csv'
-      : 'ip_records.xlsx'
+  const fallback = params.format === 'csv' ? 'ip_records.csv' : 'ip_records.xlsx'
   const filename = filenameFromDisposition(
     response.headers['content-disposition'],
     fallback,

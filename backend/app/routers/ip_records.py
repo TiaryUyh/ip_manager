@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from ..auth import get_current_user
 from ..database import get_db
 from ..io_utils import (
     build_csv_bytes,
@@ -27,7 +28,11 @@ from ..schemas import (
     SubnetMapOut,
 )
 
-router = APIRouter(prefix="/api/ip-records", tags=["ip-records"])
+router = APIRouter(
+    prefix="/api/ip-records",
+    tags=["ip-records"],
+    dependencies=[Depends(get_current_user)],
+)
 
 MAX_SUBNET_HOSTS = 1024
 

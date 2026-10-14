@@ -2,12 +2,17 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .database import Base, engine
-from .routers import ip_records
+from .auth import ensure_default_admin
+from .database import Base, SessionLocal, engine
+from .routers import auth, ip_records
 
 Base.metadata.create_all(bind=engine)
+
+with SessionLocal() as db:
+    ensure_default_admin(db)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -32,6 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(ip_records.router)
 
 
@@ -40,6 +46,18 @@ def health():
     return {"status": "ok"}
 
 
-# 必须放在 API 路由之后：Docker 单镜像时由后端直接托管前端构建产物
 if STATIC_DIR.exists():
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/")
+    def serve_index():
+        return FileResponse(STATIC_DIR / "index.html")
+
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str):
+        candidate = STATIC_DIR / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(STATIC_DIR / "index.html")
