@@ -88,10 +88,10 @@ const usagePercents = computed(() => {
 
 const gridColumns = computed(() => {
   const count = subnetMap.value?.host_count || 0
-  if (count <= 16) return 4
-  if (count <= 64) return 8
-  if (count <= 256) return 16
-  return 20
+  if (count <= 16) return 8
+  if (count <= 64) return 16
+  if (count <= 256) return 32
+  return 40
 })
 
 function emptyForm() {
@@ -379,7 +379,7 @@ onMounted(refresh)
           <el-button @click="handleReset">重置</el-button>
         </div>
 
-        <el-table v-loading="loading" :data="records" stripe empty-text="暂无 IP 记录" height="560">
+        <el-table v-loading="loading" :data="records" stripe empty-text="暂无 IP 记录">
           <el-table-column prop="ip_address" label="IP 地址" min-width="120" fixed />
           <el-table-column prop="cidr" label="网段" min-width="120">
             <template #default="{ row }">{{ row.cidr || '-' }}</template>
@@ -671,10 +671,13 @@ onMounted(refresh)
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-items: start;
+}
+
+.chart-panel {
+  order: -1;
 }
 
 .panel {
@@ -778,7 +781,7 @@ onMounted(refresh)
 .ip-grid {
   display: grid;
   gap: 4px;
-  max-height: 420px;
+  max-height: 320px;
   overflow: auto;
   padding: 2px;
 }
@@ -843,12 +846,6 @@ onMounted(refresh)
 
 .host-detail strong {
   color: var(--ink);
-}
-
-@media (max-width: 1100px) {
-  .workspace {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 900px) {
