@@ -67,15 +67,20 @@ function handleLogout() {
 <style scoped>
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
   width: 220px;
+  height: 100vh;
   flex-shrink: 0;
   background: #0f766e;
   color: #fff;
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.08);
+  overflow-y: auto;
 }
 
 .sidebar-brand {
@@ -112,8 +117,10 @@ function handleLogout() {
 .main {
   flex: 1;
   min-width: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
@@ -125,6 +132,7 @@ function handleLogout() {
   background: rgba(255, 255, 255, 0.86);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
+  flex-shrink: 0;
 }
 
 .topbar h1 {
@@ -148,15 +156,32 @@ function handleLogout() {
 .content {
   flex: 1;
   min-height: 0;
+  overflow: auto;
 }
 
 @media (max-width: 900px) {
   .layout {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     width: 100%;
+    height: auto;
+  }
+
+  .main {
+    height: auto;
+    overflow: visible;
+  }
+
+  .content {
+    overflow: visible;
   }
 
   .sidebar-menu {
