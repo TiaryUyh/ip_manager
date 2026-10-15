@@ -1,5 +1,7 @@
 import ipaddress
 import platform
+import shutil
+import socket
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -7,6 +9,7 @@ from typing import Any
 
 
 MAX_SCAN_HOSTS = 256
+TCP_PROBE_PORTS = (80, 443, 22, 445, 3389, 8080)
 
 
 def parse_network(cidr: str) -> ipaddress.IPv4Network:
@@ -24,11 +27,19 @@ def parse_network(cidr: str) -> ipaddress.IPv4Network:
     return network
 
 
+def _ping_available() -> bool:
+    return shutil.which("ping") is not None
+
+
 def _ping_once(ip: str, timeout_ms: int) -> tuple[bool, int | None]:
+    if not _ping_available():
+        return False, None
+
     system = platform.system().lower()
     if system == "windows":
         cmd = ["ping", "-n", "1", "-w", str(max(100, timeout_ms)), ip]
     else:
+        # iputils: -W 为秒；busybox 也兼容秒级超时
         timeout_s = max(1, (timeout_ms + 999) // 1000)
         cmd = ["ping", "-c", "1", "-W", str(timeout_s), ip]
 
@@ -49,6 +60,33 @@ def _ping_once(ip: str, timeout_ms: int) -> tuple[bool, int | None]:
         return False, None
 
 
+def _tcp_probe(ip: str, timeout_ms: int) -> tuple[bool, int | None]:
+    timeout_s = max(0.2, timeout_ms / 1000.0)
+    started = time.perf_counter()
+    for port in TCP_PROBE_PORTS:
+        try:
+            with socket.create_connection((ip, port), timeout=timeout_s):
+                latency = int((time.perf_counter() - started) * 1000)
+                return True, latency
+        except OSError:
+            continue
+    return False, None
+
+
+def _probe_host(ip: str, timeout_ms: int) -> dict[str, Any]:
+    alive, latency = _ping_once(ip, timeout_ms)
+    method = "icmp" if alive else None
+    if not alive:
+        alive, latency = _tcp_probe(ip, timeout_ms)
+        method = "tcp" if alive else None
+    return {
+        "ip_address": ip,
+        "alive": alive,
+        "latency_ms": latency,
+        "method": method,
+    }
+
+
 def scan_subnet(
     cidr: str,
     timeout_ms: int = 800,
@@ -64,18 +102,10 @@ def scan_subnet(
 
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         future_map = {
-            executor.submit(_ping_once, ip, timeout_ms): ip for ip in hosts
+            executor.submit(_probe_host, ip, timeout_ms): ip for ip in hosts
         }
         for future in as_completed(future_map):
-            ip = future_map[future]
-            alive, latency = future.result()
-            results.append(
-                {
-                    "ip_address": ip,
-                    "alive": alive,
-                    "latency_ms": latency,
-                }
-            )
+            results.append(future.result())
 
     results.sort(key=lambda item: tuple(int(part) for part in item["ip_address"].split(".")))
     alive_count = sum(1 for item in results if item["alive"])
@@ -87,5 +117,6 @@ def scan_subnet(
         "alive": alive_count,
         "offline": len(results) - alive_count,
         "duration_ms": duration_ms,
+        "ping_available": _ping_available(),
         "hosts": results,
     }

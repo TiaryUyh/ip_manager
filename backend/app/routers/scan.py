@@ -26,6 +26,7 @@ class ScanHostOut(BaseModel):
     ip_address: str
     alive: bool
     latency_ms: int | None = None
+    method: str | None = None
     record_id: int | None = None
     hostname: str | None = None
     assignee: str | None = None
@@ -39,6 +40,7 @@ class ScanResultOut(BaseModel):
     alive: int
     offline: int
     duration_ms: int
+    ping_available: bool = True
     hosts: list[ScanHostOut]
 
 
@@ -76,6 +78,7 @@ def scan_network(payload: ScanRequest, db: Session = Depends(get_db)):
                 ip_address=item["ip_address"],
                 alive=item["alive"],
                 latency_ms=item["latency_ms"],
+                method=item.get("method"),
                 record_id=record.id if record else None,
                 hostname=record.hostname if record else None,
                 assignee=record.assignee if record else None,
@@ -90,5 +93,6 @@ def scan_network(payload: ScanRequest, db: Session = Depends(get_db)):
         alive=raw["alive"],
         offline=raw["offline"],
         duration_ms=raw["duration_ms"],
+        ping_available=raw.get("ping_available", True),
         hosts=hosts,
     )

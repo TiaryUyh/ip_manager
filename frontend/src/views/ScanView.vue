@@ -104,8 +104,17 @@ async function handleRegister(row) {
       </div>
 
       <el-alert
-        title="通过 ICMP Ping 检测网段内存活主机。部分主机若禁止 Ping 可能显示为离线；单次最多扫描 /24（256 个地址）。"
+        title="优先 ICMP Ping，失败再尝试常见端口 TCP 探测。Docker 部署需重新构建镜像并授予 NET_RAW 权限；检测的是服务器所在网络，不是你电脑本机网络。单次最多 /24。"
         type="info"
+        :closable="false"
+        show-icon
+        class="tip"
+      />
+
+      <el-alert
+        v-if="result && result.ping_available === false"
+        title="当前环境未检测到 ping 命令，已仅使用 TCP 端口探测，结果可能不完整。"
+        type="warning"
         :closable="false"
         show-icon
         class="tip"
@@ -152,6 +161,11 @@ async function handleRegister(row) {
         <el-table-column prop="latency_ms" label="延迟" width="100">
           <template #default="{ row }">
             {{ row.latency_ms != null ? `${row.latency_ms} ms` : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="探测方式" width="100">
+          <template #default="{ row }">
+            {{ row.method === 'icmp' ? 'Ping' : row.method === 'tcp' ? 'TCP' : '-' }}
           </template>
         </el-table-column>
         <el-table-column label="登记情况" width="110">

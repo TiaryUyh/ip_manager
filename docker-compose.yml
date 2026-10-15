@@ -7,6 +7,10 @@ services:
       - "8000:8000"
     volumes:
       - ip_manager_data:/data
+    # 允许容器内 ICMP Ping（检测工具需要）
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     restart: unless-stopped
 
 volumes:

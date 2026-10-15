@@ -62,8 +62,31 @@ docker compose down
 
 ```bash
 docker build -t ip-manager:latest .
-docker run -d -p 8000:8000 -v ip_manager_data:/data --name ip-manager ip-manager:latest
+docker run -d -p 8000:8000 \
+  --cap-add=NET_RAW --cap-add=NET_ADMIN \
+  -v ip_manager_data:/data \
+  --name ip-manager ip-manager:latest
 ```
+
+### 生产环境更新
+
+```bash
+# 拉取/同步最新代码后
+docker compose up -d --build
+```
+
+不要使用 `docker compose down -v`，否则会删除数据卷。
+
+### 检测工具在 Docker 下的说明
+
+检测是在**容器/服务器所在网络**发起的，不是浏览器那台电脑。
+
+常见原因与处理：
+
+1. 旧镜像没有 `ping`：需重新 `docker compose up -d --build`
+2. 缺少 ICMP 权限：`docker-compose.yml` 已配置 `cap_add: NET_RAW`
+3. 服务器与办公网不在同一网段：容器扫不到你内网设备
+4. 目标禁 Ping：现已补充 TCP 常见端口探测兜底
 
 ## 环境要求（本地开发）
 

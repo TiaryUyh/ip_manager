@@ -16,6 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# 检测工具需要 ping；ca-certificates 便于后续扩展
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
