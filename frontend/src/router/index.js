@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isLoggedIn } from '../auth'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
+import MainLayout from '../views/MainLayout.vue'
+import ScanView from '../views/ScanView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,8 +16,21 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: HomeView,
+          meta: { title: 'IP 管理' },
+        },
+        {
+          path: 'scan',
+          name: 'scan',
+          component: ScanView,
+          meta: { title: '检测工具' },
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',

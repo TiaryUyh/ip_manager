@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .auth import ensure_default_admin
 from .database import Base, SessionLocal, engine
-from .routers import auth, ip_records
+from .routers import auth, ip_records, scan
 
 Base.metadata.create_all(bind=engine)
 
@@ -39,6 +39,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(ip_records.router)
+app.include_router(scan.router)
 
 
 @app.get("/api/health")

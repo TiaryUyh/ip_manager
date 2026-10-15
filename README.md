@@ -16,6 +16,7 @@
 - 网段占用示意图
 - CSV / Excel 导入导出（同 IP 自动更新）
 - 用户登录鉴权（JWT）
+- 网段存活检测（ICMP Ping，支持一键登记）
 - 记录字段：IP、网段、状态、主机名、MAC、使用人、部门、位置、备注
 
 ## 目录结构
@@ -109,6 +110,7 @@ npm run dev
 |------|------|------|
 | POST | `/api/auth/login` | 登录获取 Token |
 | GET | `/api/auth/me` | 当前用户信息 |
+| POST | `/api/scan/subnet` | 网段存活检测 |
 | GET | `/api/ip-records` | 分页查询 |
 | GET | `/api/ip-records/stats` | 状态统计 |
 | GET | `/api/ip-records/export?format=csv\|xlsx` | 导出 |

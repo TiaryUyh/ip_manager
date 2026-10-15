@@ -1,8 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Plus, SwitchButton, Upload } from '@element-plus/icons-vue'
+import { Download, Plus, Upload } from '@element-plus/icons-vue'
 import {
   createIpRecord,
   deleteIpRecord,
@@ -15,10 +14,6 @@ import {
   importIpRecords,
   updateIpRecord,
 } from '../api/ip'
-import { clearAuth, getUser } from '../auth'
-
-const router = useRouter()
-const currentUser = getUser()
 
 const loading = ref(false)
 const chartLoading = ref(false)
@@ -379,12 +374,6 @@ async function handleImportChange(event) {
   }
 }
 
-function handleLogout() {
-  clearAuth()
-  ElMessage.success('已退出登录')
-  router.replace('/login')
-}
-
 watch(selectedCidr, () => {
   loadSubnetMap()
 })
@@ -395,7 +384,6 @@ onMounted(refresh)
 <template>
   <div class="page">
     <header class="hero">
-      <h1 class="brand-title">IP 地址使用信息平台</h1>
       <div class="hero-actions">
         <el-dropdown split-button type="success" :icon="Download" @click="handleExport('xlsx')">
           导出 Excel
@@ -413,11 +401,9 @@ onMounted(refresh)
           </template>
         </el-dropdown>
         <el-button :icon="Upload" :loading="importing" @click="triggerImport">导入</el-button>
-        <el-button type="primary" size="large" :icon="Plus" @click="openCreate()">
+        <el-button type="primary" :icon="Plus" @click="openCreate()">
           新增记录
         </el-button>
-        <span class="user-chip">{{ currentUser?.display_name || currentUser?.username || '用户' }}</span>
-        <el-button :icon="SwitchButton" @click="handleLogout">退出</el-button>
         <input
           ref="fileInputRef"
           class="hidden-file"
@@ -701,17 +687,9 @@ onMounted(refresh)
 .hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-bottom: 16px;
-}
-
-.brand-title {
-  margin: 0;
-  color: var(--accent);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
 }
 
 .hero-actions {
@@ -724,12 +702,6 @@ onMounted(refresh)
 
 .hidden-file {
   display: none;
-}
-
-.user-chip {
-  color: var(--muted);
-  font-size: 14px;
-  padding: 0 4px;
 }
 
 .stats {
